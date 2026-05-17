@@ -3,7 +3,11 @@
 /submission_service/.idea
 /task_service/.idea
 /user-service/.idea
+/gateway/.idea
+/eureka-service/.idea
 
 /submission_service/.env
 /task_service/.env
 /user-service/.env
+/gateway/.env
+/eureka-service/.env

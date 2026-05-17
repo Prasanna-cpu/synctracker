@@ -1,6 +1,6 @@
 spring:
   application:
-    name: submission_service
+    name: SUBMISSION-SERVICE
 
   datasource:
     url: ${DB_URL}
@@ -19,7 +19,32 @@ spring:
 server:
   port: ${PORT}
 
+user-service:
+  host: ${HOST}
+  port: ${USER_PORT}
+  url: http://${user-service.host}:${user-service.port}
+
+task-service:
+  host: ${HOST}
+  port: ${TASK_PORT}
+  url: http://${task-service.host}:${task-service.port}
+
 logging:
   level:
 #    org.springframework.web: DEBUG
     org.springframework.security : DEBUG
+
+eureka:
+  host: ${HOST}
+  port: ${EUREKA_PORT}
+
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://${eureka.host}:${eureka.port}/eureka/
