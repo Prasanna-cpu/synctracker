@@ -46,7 +46,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(ObjectNotFoundException.class)
-    public ResponseEntity<ApiResponse> handleObjectNotFoundException(Exception ex){
+    public ResponseEntity<ApiResponse> handleObjectNotFoundException(ObjectNotFoundException ex){
         ApiResponse apiResponse = new ApiResponse(
                 ex.getMessage(),
                 null,
@@ -57,7 +57,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(ForbiddenAuthorizationException.class)
-    public ResponseEntity<ApiResponse> handleForbiddenAuthorizationException(Exception ex){
+    public ResponseEntity<ApiResponse> handleForbiddenAuthorizationException(ForbiddenAuthorizationException ex){
         ApiResponse apiResponse = new ApiResponse(
                 ex.getMessage(),
                 null,
@@ -68,7 +68,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ApiResponse> handleBadRequestException(Exception ex){
+    public ResponseEntity<ApiResponse> handleBadRequestException(BadRequestException ex){
         ApiResponse apiResponse = new ApiResponse(
                 ex.getMessage(),
                 null,
@@ -76,5 +76,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 HttpStatus.BAD_REQUEST
         );
         return new ResponseEntity<>(apiResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<ApiResponse> handleServiceUnavailableException(ServiceUnavailableException ex){
+        ApiResponse apiResponse = new ApiResponse(
+                ex.getMessage(),
+                null,
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                HttpStatus.SERVICE_UNAVAILABLE
+        );
+        return new ResponseEntity<>(apiResponse, HttpStatus.SERVICE_UNAVAILABLE);
     }
 }

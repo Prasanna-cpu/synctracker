@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface TaskService {
 
+    TaskDTO createTaskWithAuth(TaskDTO taskDTO, String jwt);
+
     TaskDTO createTask(TaskDTO taskDTO,  String requestRole);
 
     TaskDTO getTaskById(String Id);
@@ -25,5 +27,7 @@ public interface TaskService {
     List<TaskDTO> assignedUsersTask(String userId, TaskStatus status);
 
     TaskDTO completeTask(String taskId, String userId);
+
+    TaskDTO completeTaskWithAuth(String taskId, String jwt);
 
 }

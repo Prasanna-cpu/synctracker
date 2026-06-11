@@ -29,8 +29,8 @@ public class TaskController {
             @RequestHeader("Authorization") String jwt,
             @RequestBody TaskDTO taskDTO
     ){
-        UserDTO userDTO = userSerializer.serializeUser(jwt);
-        TaskDTO createdTaskDTO = taskService.createTask(taskDTO, userDTO.getRole().name());
+//        UserDTO userDTO = userSerializer.serializeUser(jwt);
+        TaskDTO createdTaskDTO = taskService.createTaskWithAuth(taskDTO, jwt);
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 new ApiResponse(
                         "New Task Created",
@@ -60,7 +60,7 @@ public class TaskController {
 
     @GetMapping("/assigned-tasks/user/{userId}")
     public ResponseEntity<ApiResponse> getAssignedUserId(
-            @RequestParam(name = "status")TaskStatus status,
+            @RequestParam(name = "status") TaskStatus status,
             @RequestHeader("Authorization") String jwt,
             @PathVariable String userId
     ){
@@ -166,7 +166,7 @@ public class TaskController {
             @PathVariable String userId,
             @RequestHeader("Authorization")  String jwt
     ){
-        UserDTO userDTO = userSerializer.serializeUser(jwt);
+//        UserDTO userDTO = userSerializer.serializeUser(jwt);
         TaskDTO completedTaskDTO = taskService.completeTask(taskId, userId);
         return ResponseEntity.status(HttpStatus.OK).body(
                 new ApiResponse(

@@ -5,6 +5,7 @@ import com.spring.synctracker.submission_service.dto.SubmissionDTO;
 import com.spring.synctracker.submission_service.dto.TaskDTO;
 import com.spring.synctracker.submission_service.entity.Submission;
 import com.spring.synctracker.submission_service.exception.ObjectNotFoundException;
+import com.spring.synctracker.submission_service.exception.ServiceUnavailableException;
 import com.spring.synctracker.submission_service.mapper.SubmissionMapper;
 import com.spring.synctracker.submission_service.repository.SubmissionRepository;
 import com.spring.synctracker.submission_service.serializer.TaskSerializer;
@@ -12,6 +13,8 @@ import com.spring.synctracker.submission_service.serializer.UserSerializer;
 import com.spring.synctracker.submission_service.service.abstraction.SubmissionService;
 import com.spring.synctracker.submission_service.service.abstraction.TaskService;
 import com.spring.synctracker.submission_service.service.abstraction.UserService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,18 @@ public class SubmissionServiceImplementation implements SubmissionService {
     private final TaskSerializer taskSerializer;
     private final UserSerializer userSerializer;
 
+    public SubmissionDTO submitTaskFallback(String taskId, String userId, String gitHubLink, String jwt, Throwable throwable) {
+        log.error("Failed to submit task with id {} for user with id {}. Error: {}", taskId, userId, throwable.getMessage());
+        throw new ServiceUnavailableException("Task Service down , please try again later.");
+    }
+
+    public SubmissionDTO acceptDeclineSubmissionFallback(String submissionId, SubmissionStatus status, String jwt, Throwable throwable) {
+        log.error("Failed to accept/decline submission with id {} for user with id {}. Error: {}", submissionId, jwt, throwable.getMessage());
+        throw new ServiceUnavailableException("Task Service down , please try again later.");
+    }
+
+    @CircuitBreaker(name = "taskService", fallbackMethod = "submitTaskFallback")
+    @Retry(name = "taskService")
     @Override
     public SubmissionDTO submitTask(String taskId, String userId, String gitHubLink, String jwt) {
 
@@ -79,9 +94,17 @@ public class SubmissionServiceImplementation implements SubmissionService {
 
     @Override
     public List<SubmissionDTO> getTaskSubmissionsByTaskId(String taskId) {
-        return List.of();
+        List<Submission> submissions = submissionRepository
+                .getSubmissionByTaskId(taskId);
+        List<SubmissionDTO> submissionDTOS = submissions
+                .stream()
+                .map(SubmissionMapper::mapToSubmissionDTO)
+                .toList();
+        return submissionDTOS;
     }
 
+    @CircuitBreaker(name = "taskService", fallbackMethod = "acceptDeclineSubmissionFallback")
+    @Retry(name = "taskService")
     @Override
     public SubmissionDTO acceptDeclineSubmission(String submissionId, SubmissionStatus status, String jwt) {
         Submission submission = submissionRepository

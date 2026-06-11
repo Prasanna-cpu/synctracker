@@ -1,14 +1,20 @@
 package com.spring.synctracker.task_service.service.implementation;
 
 import com.spring.synctracker.task_service.dto.TaskDTO;
+import com.spring.synctracker.task_service.dto.UserDTO;
 import com.spring.synctracker.task_service.entity.Task;
+import com.spring.synctracker.task_service.enums.Role;
 import com.spring.synctracker.task_service.enums.TaskStatus;
 import com.spring.synctracker.task_service.exception.BadRequestException;
 import com.spring.synctracker.task_service.exception.ForbiddenAuthorizationException;
 import com.spring.synctracker.task_service.exception.ObjectNotFoundException;
+import com.spring.synctracker.task_service.exception.ServiceUnavailableException;
 import com.spring.synctracker.task_service.mapper.TaskMapper;
 import com.spring.synctracker.task_service.repository.TaskRepository;
+import com.spring.synctracker.task_service.serializer.UserSerializer;
 import com.spring.synctracker.task_service.service.abstraction.TaskService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,7 +33,44 @@ import java.util.List;
 public class TaskServiceImplementation implements TaskService {
 
     private final TaskRepository taskRepository;
+    private final UserSerializer userSerializer;
 
+    public TaskDTO createTaskWithAuthFallback(TaskDTO taskDTO, String jwt, Throwable ex) {
+        log.error("User service is unavailable : {} ", ex.getMessage());
+        throw new ServiceUnavailableException("User service is down. Please try again later");
+    }
+
+    public TaskDTO completeTaskWithAuthFallback(String taskId, String jwt, Throwable ex) {
+        log.error("User service is unavailable :  {}", ex.getMessage());
+        throw new ServiceUnavailableException("User service is down. Please try again later");
+    }
+
+
+    // Circuit breaker applied because this method depends on USER-SERVICE via Feign call
+    @CircuitBreaker(name = "userService", fallbackMethod = "createTaskWithAuthFallback")
+    @Retry(name = "userService")
+    @Override
+    public TaskDTO createTaskWithAuth(TaskDTO taskDTO, String jwt) {
+        UserDTO userDTO = userSerializer.serializeUser(jwt);
+        Role userRole = userDTO.getRole();
+
+        if (!"ADMIN".equals(userRole.name()) && !"ROLE_ADMIN".equals(userRole.name())) {
+            throw new ForbiddenAuthorizationException("Unauthorized to create task");
+        }
+
+        Task task = TaskMapper.mapToTask(taskDTO);
+        task.setStatus(TaskStatus.PENDING);
+        task.setTaskCreatedAt(LocalDate.now());
+
+        if(task.getTags() == null){
+            task.setTags(new ArrayList<>());
+        }
+
+        Task savedTask = taskRepository.save(task);
+        TaskDTO savedTaskDTO = TaskMapper.mapToTaskDTO(savedTask);
+        return savedTaskDTO;
+
+    }
 
     @Override
     public TaskDTO createTask(TaskDTO taskDTO, String requestRole) {
@@ -133,6 +176,36 @@ public class TaskServiceImplementation implements TaskService {
 
     @Override
     public TaskDTO completeTask(String taskId, String userId) {
+
+        Task task = taskRepository
+                .findById(taskId)
+                .orElseThrow(() -> new ObjectNotFoundException("Task not found with the id : " + taskId));
+
+        if(task.getAssignedUserId() == null){
+            throw new BadRequestException("Task must be assigned to a user");
+        }
+
+        if(!task.getAssignedUserId().equals(userId)){
+            throw new ForbiddenAuthorizationException("Unauthorized to complete this task");
+        }
+
+        if(task.getStatus().equals(TaskStatus.DONE)){
+            throw new BadRequestException("Task is already completed");
+        }
+
+        task.setStatus(TaskStatus.DONE);
+        Task savedTask = taskRepository.save(task);
+        TaskDTO savedTaskDTO = TaskMapper.mapToTaskDTO(savedTask);
+        return savedTaskDTO;
+
+    }
+
+    @CircuitBreaker(name = "userService", fallbackMethod = "completeTaskWithAuthFallback")
+    @Retry(name = "userService")
+    @Override
+    public TaskDTO completeTaskWithAuth(String taskId, String jwt) {
+        UserDTO userDTO = userSerializer.serializeUser(jwt);
+        String userId = userDTO.getId();
 
         Task task = taskRepository
                 .findById(taskId)

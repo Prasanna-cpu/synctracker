@@ -16,16 +16,41 @@ spring:
       hibernate:
         format_sql: true
 
+  cloud:
+    openfeign:
+      circuitbreaker:
+        alphanumeric-ids:
+          enabled: true
+
 server:
   port: ${PORT}
 logging:
   level:
     org.springframework.security : DEBUG
 
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 60
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+        automatic-transition-from-open-to-half-open-enabled: true
+
+  retry:
+    instances:
+      userService:
+        max-attempts: 3
+        wait-duration: 1s
+
 user-service:
   host: ${HOST}
   port: ${USER_PORT}
   url: http://${user-service.host}:${user-service.port}
+
+
 
 eureka:
   host: ${HOST}

@@ -47,7 +47,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(ObjectNotFoundException.class)
-    public ResponseEntity<ApiResponse> handleObjectNotFoundException(Exception ex){
+    public ResponseEntity<ApiResponse> handleObjectNotFoundException(ObjectNotFoundException ex){
         ApiResponse apiResponse = new ApiResponse(
                 ex.getMessage(),
                 null,
@@ -57,6 +57,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiResponse, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<ApiResponse> handleServiceUnavailableException(ServiceUnavailableException ex){
+        ApiResponse apiResponse = new ApiResponse(
+                ex.getMessage(),
+                null,
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                HttpStatus.SERVICE_UNAVAILABLE
+        );
+        return new ResponseEntity<>(apiResponse, HttpStatus.SERVICE_UNAVAILABLE);
+    }
 
 
 }

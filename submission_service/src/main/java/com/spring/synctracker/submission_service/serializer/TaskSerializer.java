@@ -21,7 +21,7 @@ public class TaskSerializer {
     private final TaskService taskService;
 
     public TaskDTO serializeTask(String jwt, String taskId){
-        log.info("JWT : {}", jwt);
+//        log.info("JWT : {}", jwt);
         ApiResponse apiResponse = taskService.getTaskByIdHandler(jwt, taskId);
         Map<String, Object> data = (Map<String, Object>) apiResponse.getData();
         log.info("Received data: {}", data);

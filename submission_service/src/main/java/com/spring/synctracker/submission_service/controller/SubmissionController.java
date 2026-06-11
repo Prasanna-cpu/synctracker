@@ -33,7 +33,7 @@ public class SubmissionController {
             @PathVariable String taskId,
             @RequestParam("githubLink") String githubLink
     ){
-        userSerializer.serializeUser(jwt);
+//        userSerializer.serializeUser(jwt);
         SubmissionDTO submissionDTO = submissionService.submitTask(taskId, userId, githubLink, jwt);
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 new ApiResponse(
